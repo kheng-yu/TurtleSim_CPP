@@ -7,9 +7,8 @@ implementing the following functions
 
 As of V1, it is done by
 1) move() function which publishes commands to /turtle1/cmd_vel using geometry_msg/Twist
-1.1) Using time based approach for easier implementation, however results in an error of about 0.3m
-2) Subscribing to turtlesim/Pose to obtain current pose (location and orientation) of the turtle
-2.1) This allows one to determine the distance and angle to turn, and can use move() to get to the goal
+2) Using time based approach for easier implementation, however results in an error of about 0.3m
+3) Subscribing to turtlesim/Pose to obtain current pose (location and orientation) of the turtle, this allows one to determine the distance and angle to turn, and can use move() to get to the goal
 
 TODO:
 1) Create a class object for turtle, as practice and also for readability
