@@ -19,3 +19,4 @@ TODO:
 1) Create a class object for turtle, as practice and also for readability
 2) Making it Linear Time Independent (LTI) by removing all time-based implementation
 3) Online tutorial for Python (http://wiki.ros.org/turtlesim/Tutorials/Go%20to%20Goal) uses a PID controller to reduce error, a similar approach will be taken for this project
+4) Clean up the comments
