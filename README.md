@@ -6,7 +6,7 @@ implementing the following functions
 2) Specify a specific spot (goal) the turtle should go to
 
 To use:
-1) Run catkin_make on catkin_workspace
+1) Run catkin_make on <catkin_workspace>, put entire content inside <catkin_workspace>/src/turtlesim_runner
 2) Run roscore, turtlesim_node and script
 3) Follow script prompts
 
