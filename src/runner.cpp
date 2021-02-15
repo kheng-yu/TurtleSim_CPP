@@ -56,18 +56,24 @@ class Turtle{
     // topic: turtle1/cmd_vel
     // msg type: geometry_msgs/Twist
     // args: linear angular: [x,y,z] [x,y,z]
-    void move(double dist, double speed, bool isForward, double angle, bool toTurn)
+    void move(double dist, double speed, bool isForward, double angle)
     {
         // Initialize msg
         geometry_msgs::Twist vel_msg;
 
-        // Define Angular Velocity constant
-        const double ANG_VEL = 45*M_PI/180; // 45 degree/s rotation
+        // Time based implementation
+        double initialtime, traveltime, finaltime;
 
-        // Turn first
-        if(toTurn)
+        // Define Angular Velocity constant
+        const double ANG_VEL = 90*M_PI/180; // 45 degree/s rotation
+
+        bool toTurn = 0;
+
+        // Check if to turn
+        if(angle != 0)
         {
-            if(angle  >= 0)
+            toTurn = 1;
+            if(angle  > 0)
             {
                 vel_msg.angular.z = ANG_VEL; 
             }
@@ -76,22 +82,27 @@ class Turtle{
                 vel_msg.angular.z = -ANG_VEL; 
             }
         }
-        double initialtime = ros::Time::now().toSec();
-        double traveltime = abs(angle)/ANG_VEL;
-        double finaltime = initialtime + traveltime;
-        ROS_INFO("Begin alining direction!");
-        
-        // Begin turning until specified angle
-        velocityPublisher.publish(vel_msg);
-        while(ros::Time::now().toSec() <= finaltime)
+
+        if(toTurn)
         {
+            initialtime = ros::Time::now().toSec();
+            traveltime = abs(angle)/ANG_VEL;
+            finaltime = initialtime + traveltime;
+
+            ROS_INFO("Begin alining direction!");
+        
+            // Begin turning until specified angle
             velocityPublisher.publish(vel_msg);
+            while(ros::Time::now().toSec() <= finaltime)
+            {
+                velocityPublisher.publish(vel_msg);
+            }
+
+            vel_msg.angular.z = 0;
+            velocityPublisher.publish(vel_msg); // Stop turning
+
+            ROS_INFO("Finished aligning!");
         }
-
-        vel_msg.angular.z = 0;
-        velocityPublisher.publish(vel_msg); // Stop turning
-
-        ROS_INFO("Finished aligning!");
 
         // Set forward or backwards movement
         if(isForward)
@@ -212,14 +223,6 @@ bool instruction(Turtle turtle)
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << "Are you moving forwards? Answer 1 for true or 0 for false. ";
         }
-        std::cout << "Would you like to turn before moving? Answer 1 for true or 0 for false. ";
-        while(!(std::cin >> toTurn))
-        {
-            std::cout << "You have entered a wrong input, please specify true or false.\n";
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Would you like to turn before moving? Answer 1 for true or 0 for false. ";
-        }
         if(toTurn)
         {
             std::cout << "How many degrees to the left would you like to turn? ";
@@ -232,7 +235,7 @@ bool instruction(Turtle turtle)
             }
         }
 
-        turtle.move(dist, speed, isForward, angle*M_PI/180, toTurn);
+        turtle.move(dist, speed, isForward, angle*M_PI/180);
     }
     
     else if(command == 2)
@@ -269,7 +272,7 @@ bool instruction(Turtle turtle)
         double move_angle = dest_angle - turtle.getAngle();
         ROS_INFO("Move Angle = %lf", move_angle*180/M_PI);
         
-        turtle.move(move_dist, 5, 1, move_angle, 1); // slight errors
+        turtle.move(move_dist, 5, 1, move_angle); // slight errors
     }
 
     else // entered random number, exit
