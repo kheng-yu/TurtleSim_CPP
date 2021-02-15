@@ -6,9 +6,10 @@ implementing the following functions
 2) Specify a specific spot (goal) the turtle should go to
 
 To use:
-1) Run catkin_make on <catkin_workspace>, put entire content inside <catkin_workspace>/src/turtlesim_runner
-2) Run roscore, turtlesim_node and script
-3) Follow script prompts
+1) Put entire content inside <catkin_workspace>/src/turtlesim_runner
+2) Run catkin_make on <catkin_workspace>
+3) Run roscore, turtlesim_node and script
+4) Follow script prompts
 
 As of V1.1, it is done by 
 1) A turtle class which holds the turtle's current pose (coordinates & orientation)
