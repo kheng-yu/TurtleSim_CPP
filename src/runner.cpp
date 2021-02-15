@@ -34,7 +34,8 @@ class Turtle{
         this->poseSubscriber = n.subscribe("/turtle1/pose", 10, &Turtle::updatePose, this);
         ros::Rate loop_rate(1);
     }
-    /* Functions */
+
+    /* Turtle Class Functions */
     // Get X of turtle
     double getX()
     {
@@ -66,9 +67,15 @@ class Turtle{
         // Turn first
         if(toTurn)
         {
-            vel_msg.angular.z = ANG_VEL; 
+            if(angle  >= 0)
+            {
+                vel_msg.angular.z = ANG_VEL; 
+            }
+            else
+            {
+                vel_msg.angular.z = -ANG_VEL; 
+            }
         }
-        // ROS_INFO("Angle = %lf, Angular Vel = %lf\n", angle, ANG_VEL);
         double initialtime = ros::Time::now().toSec();
         double traveltime = abs(angle)/ANG_VEL;
         double finaltime = initialtime + traveltime;
@@ -132,8 +139,8 @@ class Turtle{
     }
 };
 
+/* Function List */
 
-// Function List
 bool instruction(Turtle turtle);
 
 int main(int argc, char **argv)
@@ -158,6 +165,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
+// Instructions for main()
+// Prompts for user input to determine what the passed in the turtle object should do
 bool instruction(Turtle turtle)
 {
     // Initialize Variables
@@ -230,9 +239,10 @@ bool instruction(Turtle turtle)
     {
         double goto_x, goto_y;
 
-        std::cout << "Current position of turtle is\n";
+        std::cout << "Current pose of turtle is\n";
         std::cout << "x: " << turtle.getX() << "\n";
         std::cout << "y: " << turtle.getY() << "\n";
+        std::cout << "angle: " << turtle.getAngle()*180/M_PI << "\n";
         std::cout << "Where would you like the turtle to go to?\n";
         std::cout << "x = ";
         while(!(std::cin >> goto_x))
@@ -257,6 +267,7 @@ bool instruction(Turtle turtle)
         double move_dist = sqrt((move_x*move_x) + (move_y*move_y));
         double dest_angle = std::atan2(move_y,move_x);
         double move_angle = dest_angle - turtle.getAngle();
+        ROS_INFO("Move Angle = %lf", move_angle*180/M_PI);
         
         turtle.move(move_dist, 5, 1, move_angle, 1); // slight errors
     }
