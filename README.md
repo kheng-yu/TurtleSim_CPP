@@ -11,18 +11,22 @@ To use:
 3) Run roscore, turtlesim_node and script
 4) Follow script prompts
 
-As of V1.1, it is done by 
+As of V1.2, the code is
 1) A turtle class which holds the turtle's current pose (coordinates & orientation)
-1) move() function which publishes commands to /turtle1/cmd_vel using geometry_msg/Twist
-2) Using time based approach for easier implementation, however results in an error of about 0.3m
+2) move() function which publishes commands to /turtle1/cmd_vel using geometry_msg/Twist
 3) Subscribing to turtlesim/Pose to obtain current pose (location and orientation) of the turtle, this allows one to determine the distance and angle to turn, and can use move() to get to the goal
+4) Almost Linear Time-Invariant (LTI), smoothmove() allows it to achieve an accuracy up to the error threshold from user.
 
 TODO:
-1) Making it Linear Time Independent (LTI) by removing all time-based implementation
-2) Online tutorial for Python (http://wiki.ros.org/turtlesim/Tutorials/Go%20to%20Goal) uses a PID controller to reduce error, a similar approach will be taken for this project
+1) Make move() LTI as well.
 
 ------------------------------------------------------------------
 History & Changelog:
+V1.2
+1) Made new smoothmove() for travelling to specific spot function
+2) smoothmove() is LTI, can achieve accuracy up to error threshold from user
+3) Implemented a Proportional controller for smoothmove()
+
 V1.1
 1) Turtle Class made
 2) Code block comments in runner.cpp removed

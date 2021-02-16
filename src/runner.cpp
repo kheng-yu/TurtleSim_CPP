@@ -21,6 +21,8 @@ class Turtle{
     double angle;
     double linvel;
     double angvel;
+    const double KP_DIST = 5;
+    const double KP_ANGLE = 5;
     // ROS
     ros::NodeHandle n; // Create its specific node handler
     ros::Publisher velocityPublisher;
@@ -32,7 +34,6 @@ class Turtle{
     {
         this->velocityPublisher = n.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel", 10);
         this->poseSubscriber = n.subscribe("/turtle1/pose", 10, &Turtle::updatePose, this);
-        ros::Rate loop_rate(1);
     }
 
     /* Turtle Class Functions */
@@ -51,6 +52,16 @@ class Turtle{
     {
         return angle;
     }
+    // Get Linear Velocity of turtle
+    double getLinVel()
+    {
+        return linvel;
+    }
+    // Get Angular Velocity of turtle
+    double getAngVel()
+    {
+        return angvel;
+    }
 
     // Move the robot for a certain distance at a certain speed
     // topic: turtle1/cmd_vel
@@ -58,6 +69,9 @@ class Turtle{
     // args: linear angular: [x,y,z] [x,y,z]
     void move(double dist, double speed, bool isForward, double angle)
     {
+        // Update position
+        ros::spinOnce();
+
         // Initialize msg
         geometry_msgs::Twist vel_msg;
 
@@ -65,14 +79,11 @@ class Turtle{
         double initialtime, traveltime, finaltime;
 
         // Define Angular Velocity constant
-        const double ANG_VEL = 90*M_PI/180; // 45 degree/s rotation
-
-        bool toTurn = 0;
+        const double ANG_VEL = 90*M_PI/180;
 
         // Check if to turn
-        if(angle != 0)
+        if(angle!= 0)
         {
-            toTurn = 1;
             if(angle  > 0)
             {
                 vel_msg.angular.z = ANG_VEL; 
@@ -81,10 +92,7 @@ class Turtle{
             {
                 vel_msg.angular.z = -ANG_VEL; 
             }
-        }
 
-        if(toTurn)
-        {
             initialtime = ros::Time::now().toSec();
             traveltime = abs(angle)/ANG_VEL;
             finaltime = initialtime + traveltime;
@@ -96,6 +104,10 @@ class Turtle{
             while(ros::Time::now().toSec() <= finaltime)
             {
                 velocityPublisher.publish(vel_msg);
+                ros::spinOnce();
+                // ROS_INFO("this->angle: %lf \n", this->angle);
+                // ROS_INFO("angle: %lf \n", angle);
+                // ROS_INFO("diff: %lf \n", this->angle - angle);
             }
 
             vel_msg.angular.z = 0;
@@ -126,6 +138,7 @@ class Turtle{
         while (ros::Time::now().toSec() <= finaltime)
         {
             velocityPublisher.publish(vel_msg);
+            ros::spinOnce();
         }
         // Reached specified distance
         vel_msg.linear.x = 0;
@@ -136,23 +149,98 @@ class Turtle{
         ROS_INFO("Turtle reached its destination!\n");
     }
     
+    // Move the robot to a specified location, moving while rotating at the same time
+    void smoothmove(double dest_x, double dest_y, double error)
+    {
+        // Initialize msg
+        geometry_msgs::Twist vel_msg;
+
+        // Initialize Variables
+        double move_x, move_y, move_dist, dest_angle, move_angle;
+        
+        // Initialize frequenccy
+        ros::Rate loop_rate(62);
+
+        // Get initial
+        move_x = dest_x - this->x;
+        move_y = dest_y - this->y;
+        move_dist = sqrt((move_x*move_x) + (move_y*move_y));
+        
+        // Have not reached
+        while(move_dist > error)
+        {
+            // Set forward velocity
+            vel_msg.linear.x = KP_DIST * move_dist;
+            if(vel_msg.linear.x > 5)
+            {
+                vel_msg.linear.x = 5;
+            }
+
+            // Compute angle to turn
+            dest_angle = std::atan2(move_y,move_x);
+            move_angle = dest_angle - this->angle;
+            
+            // Have to fix for facing left, as it fluctuates between PI and -PI
+            // This also lets it turn more efficiently (turns the shorter distance to reach dest_angle)
+            while(abs(move_angle) > M_PI)
+            {
+                if(move_angle > 0) // Should turn right instead
+                {
+                    move_angle -= 2*M_PI;
+                }
+                else // Should turn left instead
+                {
+                    move_angle += 2*M_PI;
+                }
+            }
+
+            // Scale angle error as velocity to turn (Proportional Controller)
+            vel_msg.angular.z = KP_ANGLE * move_angle;
+            
+            velocityPublisher.publish(vel_msg);
+
+            // Update position
+            ros::spinOnce();
+
+            // Get new distance
+            move_x = dest_x - this->x;
+            move_y = dest_y - this->y;
+            move_dist = sqrt((move_x*move_x) + (move_y*move_y));
+
+            loop_rate.sleep();
+        }
+
+        // Should reach destination by now
+        vel_msg.linear.x = 0;
+        vel_msg.angular.z = 0;
+        velocityPublisher.publish(vel_msg);
+
+        ROS_INFO("x: %lf, y:%lf \n", this->x, this->y);    
+    }
+
     // Update turtle object's pose when receive /turtlesim/Pose/ msgs
     // topic: turtle1/pose
     // msg type: turtlesim/Pose
     // args: [double] x y theta linear_velocity angular_velocity
     void updatePose(const turtlesim::Pose::ConstPtr& msg)
     {
-        x = msg->x;
-        y = msg->y;
-        angle = msg->theta; // in rads
-        linvel = msg->linear_velocity; // in m/s
-        angvel = msg->angular_velocity; // in rads
+        this->x = msg->x;
+        this->y = msg->y;
+        this->angle = msg->theta; // in rads
+        this->linvel = msg->linear_velocity; // in m/s
+        this->angvel = msg->angular_velocity; // in rads
+
+        // std::cout << "Updating pose, "<< "\n" << "x: " << msg->x << "\n";
+        // std::cout << "y: " << msg->y << "\n";
+        // std::cout << "Current angle: " << this->angle << "\n";
+        // // std::cout << "linvel: " << msg->linear_velocity << "\n";
+        // // std::cout << "angvel: " << msg->angular_velocity << "\n";
     }
 };
 
 /* Function List */
 
-bool instruction(Turtle turtle);
+bool instruction(Turtle& turtle);
 
 int main(int argc, char **argv)
 {
@@ -178,12 +266,12 @@ int main(int argc, char **argv)
 
 // Instructions for main()
 // Prompts for user input to determine what the passed in the turtle object should do
-bool instruction(Turtle turtle)
+bool instruction(Turtle& turtle)
 {
     // Initialize Variables
     int command;
     double dist, speed, angle;
-    bool isForward, toTurn;
+    bool isForward;
 
     // Ask for command
     std::cout << "Hello, this program has two functions. Please enter 1 or 2.\n";
@@ -223,16 +311,13 @@ bool instruction(Turtle turtle)
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << "Are you moving forwards? Answer 1 for true or 0 for false. ";
         }
-        if(toTurn)
+        std::cout << "How many degrees to the left would you like to turn? ";
+        while(!(std::cin >> angle))
         {
+            std::cout << "You have entered a wrong input, please specify a number\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << "How many degrees to the left would you like to turn? ";
-            while(!(std::cin >> angle))
-            {
-                std::cout << "You have entered a wrong input, please specify a number\n";
-                std::cin.clear();
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                std::cout << "How many degrees to the left would you like to turn? ";
-            }
         }
 
         turtle.move(dist, speed, isForward, angle*M_PI/180);
@@ -240,7 +325,11 @@ bool instruction(Turtle turtle)
     
     else if(command == 2)
     {
-        double goto_x, goto_y;
+        // Update Position
+        ros::spinOnce();
+        
+        // Initialize Variables
+        double goto_x, goto_y, error;
 
         std::cout << "Current pose of turtle is\n";
         std::cout << "x: " << turtle.getX() << "\n";
@@ -263,16 +352,16 @@ bool instruction(Turtle turtle)
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << "y = ";
         }
+        std::cout << "error threshold = ";
+        while(!(std::cin >> error))
+        {
+            std::cout << "You have entered a wrong input, please specify with numbers only.\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "error = ";
+        }
 
-        // Got the destination, now orient and move
-        double move_x = goto_x - turtle.getX();
-        double move_y = goto_y - turtle.getY();
-        double move_dist = sqrt((move_x*move_x) + (move_y*move_y));
-        double dest_angle = std::atan2(move_y,move_x);
-        double move_angle = dest_angle - turtle.getAngle();
-        ROS_INFO("Move Angle = %lf", move_angle*180/M_PI);
-        
-        turtle.move(move_dist, 5, 1, move_angle); // slight errors
+        turtle.smoothmove(goto_x, goto_y, error);
     }
 
     else // entered random number, exit
