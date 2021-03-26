@@ -9,6 +9,7 @@ To use:
 1) Put entire content inside <catkin_workspace>/src/turtlesim_runner
 2) Run catkin_make on <catkin_workspace>
 3) Run roscore, turtlesim_node and script
+3.1) To run the script, you may need to first do source devel/setup.bash
 4) Follow script prompts
 
 As of V1.2, the code is
